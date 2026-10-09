@@ -1,0 +1,25 @@
+{
+  "name": "pickfast",
+  "version": "1.0.0",
+  "description": "AI-Powered Shopping Intelligence Assistant & Product Comparison Engine for Global Amazon",
+  "main": "_worker.js",
+  "scripts": {
+    "dev": "wrangler pages dev .",
+    "deploy": "wrangler pages deploy ."
+  },
+  "keywords": [
+    "ai",
+    "claude-api",
+    "anthropic",
+    "claude-3-5-haiku",
+    "e-commerce",
+    "amazon-affiliate",
+    "shopping-assistant",
+    "cloudflare-pages"
+  ],
+  "author": "Konuyorum",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

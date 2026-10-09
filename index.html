@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickfast - Smart Shopping Assistant</title>
+    
+    <meta id="ogTitle" property="og:title" content="Pickfast - AI Shopping Assistant">
+    <meta id="ogDesc" property="og:description" content="We analyze thousands of reviews in seconds so you don't have to.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 
+                        brandBlue: '#0055A4', 
+                        neonCyan: '#00F0FF', 
+                        darkBg: '#050505',
+                        spaceBlack: '#0a0a0a'
+                    },
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: white; background-image: radial-gradient(circle at top, #0f172a 0%, #000000 100%); min-height: 100vh;}
+        .glass-panel { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); transition: all 0.3s ease; }
+        .glass-panel:hover { border-color: rgba(0, 85, 164, 0.4); box-shadow: 0 10px 30px -10px rgba(0, 85, 164, 0.3); transform: translateY(-2px); }
+        .glow-text { text-shadow: 0 0 40px rgba(0, 85, 164, 0.5); }
+        .loader { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.1); border-bottom-color: #00F0FF; border-radius: 50%; display: inline-block; animation: rotation 0.8s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .vs-row { display: grid; grid-template-columns: 1fr 1.5fr 1.5fr; gap: 15px; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: start; transition: background 0.2s; }
+        .vs-row:hover { background: rgba(255,255,255,0.02); }
+        .winner-text { color: #4ade80; font-weight: 700; }
+        
+        .ai-list-box ul { list-style-type: none; padding-left: 0; margin-top: 10px; }
+        .ai-list-box ul li { position: relative; padding-left: 28px; margin-bottom: 12px; color: #d1d5db; line-height: 1.6; }
+        #sPros .ai-list-box ul li::before { content: '✓'; position: absolute; left: 0; top: 0px; color: #4ade80; font-weight: bold; font-size: 1.1em; }
+        #sCons .ai-list-box ul li::before { content: '✕'; position: absolute; left: 0; top: 0px; color: #f87171; font-weight: bold; font-size: 1.1em; }
+
+        #legalModal { backdrop-filter: blur(10px); }
+        .modal-content { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body class="flex flex-col items-center p-4">
+
+    <nav class="w-full max-w-6xl flex justify-between items-center py-6 z-20">
+        <div onclick="resetUI()" class="cursor-pointer flex items-center gap-2 group">
+            <span class="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-brandBlue to-neonCyan">PICKFAST</span>
+            <span class="text-gray-500 text-sm hidden md:inline font-medium tracking-wide">| Smart Assistant</span>
+        </div>
+    </nav>
+
+    <div id="errorToast" class="hidden fixed top-5 left-1/2 transform -translate-x-1/2 z-50 bg-red-900/90 border border-red-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="errorMsg" class="font-medium text-sm">An error occurred.</span>
+    </div>
+
+    <div id="heroSection" class="w-full max-w-5xl flex flex-col items-center text-center py-8 z-10 transition-all duration-500">
+        
+        <div class="mb-6 inline-block bg-blue-900/40 border border-blue-400/50 text-neonCyan font-extrabold px-6 py-2 rounded-full text-base uppercase tracking-[0.2em] shadow-[0_0_25px_rgba(0,240,255,0.4)]">
+            PICKFAST.SHOP
+        </div>
+
+        <h1 class="text-5xl md:text-7xl font-black text-white glow-text mb-6">What are you looking for?</h1>
+        
+        <p class="text-gray-400 text-lg md:text-xl mb-12 font-light max-w-3xl">
+            Instead of spending hours researching, we analyze <span class="text-white font-medium">thousands of user reviews</span> and bring you the best options in seconds.
+        </p>
+
+        <div class="w-full max-w-3xl mb-8 bg-spaceBlack/80 backdrop-blur-xl rounded-3xl border border-white/10 p-2 shadow-2xl">
+            <div class="flex flex-col md:flex-row gap-2">
+                <input type="text" id="q1" placeholder="e.g., Running Shoes, iPhone 15, Airfryer" class="flex-grow bg-transparent text-white p-5 text-lg font-medium focus:outline-none placeholder-gray-600 rounded-xl">
+                <button onclick="toggleVS()" id="vsBtn" class="bg-white/5 hover:bg-white/10 text-gray-400 px-6 py-4 rounded-xl font-bold transition flex items-center gap-2"><i class="fas fa-balance-scale"></i> VS Mode</button>
+                <button onclick="performSearch()" class="bg-gradient-to-r from-brandBlue to-blue-600 hover:from-blue-600 hover:to-blue-500 text-white px-8 py-4 rounded-xl font-bold transition shadow-lg flex items-center gap-2">SEARCH <i class="fas fa-search"></i></button>
+            </div>
+            <div id="vsInputContainer" class="hidden mt-2 border-t border-white/5 pt-2">
+                <input type="text" id="q2" placeholder="2nd Product to compare..." class="w-full bg-transparent text-white p-5 text-lg focus:outline-none rounded-xl">
+            </div>
+        </div>
+
+        <div class="w-full max-w-4xl grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mt-4">
+            <button onclick="quickSearch('Best Smartphones')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">📱</span><span class="text-xs font-semibold text-gray-300">Smartphones</span></button>
+            <button onclick="quickSearch('Top TV & Audio Systems')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">📺</span><span class="text-xs font-semibold text-gray-300">TV & Audio</span></button>
+            <button onclick="quickSearch('Best Home Appliances')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">🏠</span><span class="text-xs font-semibold text-gray-300">Home Appliances</span></button>
+            <button onclick="quickSearch('Sports & Fashion Trends')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">👟</span><span class="text-xs font-semibold text-gray-300">Sports & Fashion</span></button>
+            <button onclick="quickSearch('Beauty & Personal Care')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">✨</span><span class="text-xs font-semibold text-gray-300">Beauty & Care</span></button>
+            
+            <button onclick="quickSearch('Best Gaming Gear')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">🎮</span><span class="text-xs font-semibold text-gray-300">Gaming Gear</span></button>
+            <button onclick="quickSearch('Best Value for Money Products')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">💰</span><span class="text-xs font-semibold text-gray-300">Best Value</span></button>
+            <button onclick="quickSearch('Amazon Top Sellers')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">🔥</span><span class="text-xs font-semibold text-gray-300">Top Sellers</span></button>
+            <button onclick="quickSearch('Best Deals and Discounts')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition"><span class="text-2xl">🏷️</span><span class="text-xs font-semibold text-gray-300">Today's Deals</span></button>
+            <button onclick="quickSearch('Pickfast Exclusive Recommendations')" class="glass-panel p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-white/5 transition border-blue-500/30"><span class="text-2xl">👑</span><span class="text-xs font-bold text-neonCyan">Pickfast Picks</span></button>
+        </div>
+    </div>
+
+    <div id="loading" class="hidden mt-32 text-center z-20 flex flex-col items-center">
+        <div class="loader mb-6"></div>
+        <h3 class="text-2xl font-bold text-white">AI is Analyzing...</h3>
+    </div>
+
+    <div id="resultsArea" class="hidden w-full max-w-5xl pb-20 mt-4 z-20">
+        <button onclick="resetUI()" class="mb-8 text-gray-400 hover:text-white flex items-center gap-2 font-medium"><i class="fas fa-arrow-left"></i> New Search</button>
+
+        <div id="singleView" class="hidden glass-panel p-8 md:p-10 rounded-3xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-10"><i id="sIcon" class="fas fa-microchip text-8xl"></i></div>
+            <h2 id="sTitle" class="text-3xl md:text-4xl font-black text-white mb-8 relative z-10 capitalize"></h2>
+            <div class="bg-gradient-to-r from-blue-900/30 to-transparent border-l-4 border-neonCyan p-6 rounded-r-2xl mb-10"><p id="sVerdict" class="text-gray-200 leading-relaxed"></p></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <div class="bg-green-950/20 border border-green-900/50 p-6 rounded-2xl" id="sPros"><h3 class="text-green-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-check-circle"></i> Pros</h3><div class="ai-list-box text-sm"></div></div>
+                <div class="bg-red-950/20 border border-red-900/50 p-6 rounded-2xl" id="sCons"><h3 class="text-red-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-exclamation-triangle"></i> Cons</h3><div class="ai-list-box text-sm"></div></div>
+            </div>
+            <a id="sBtn" href="#" target="_blank" class="block w-full bg-[#FF9900] hover:bg-[#ffad33] text-black font-extrabold text-xl text-center py-5 rounded-2xl transition shadow-[0_0_20px_rgba(255,153,0,0.3)]"><i class="fab fa-amazon mr-2"></i> View Price on Amazon</a>
+        </div>
+
+        <div id="vsView" class="hidden glass-panel p-2 md:p-6 rounded-3xl">
+            <h2 class="text-2xl md:text-3xl font-black text-center p-6 border-b border-white/5"><span id="vN1" class="text-brandBlue uppercase"></span> <span class="text-gray-600 font-light mx-2">VS</span> <span id="vN2" class="text-neonCyan uppercase"></span></h2>
+            <div id="vTable" class="text-sm md:text-base mt-2"></div>
+            <div class="p-8 bg-gradient-to-r from-blue-900/20 to-purple-900/10 mt-6 rounded-2xl"><h3 class="text-neonCyan font-bold mb-3"><i class="fas fa-trophy text-yellow-500"></i> Pickfast Verdict:</h3><p id="vSum" class="text-gray-300"></p></div>
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a id="vBtn1" href="#" target="_blank" class="bg-[#FF9900] text-black font-bold py-5 rounded-2xl text-center shadow-lg"><i class="fab fa-amazon mr-2"></i> View <span id="vBtnTxt1" class="uppercase"></span></a>
+                <a id="vBtn2" href="#" target="_blank" class="bg-[#FF9900] text-black font-bold py-5 rounded-2xl text-center shadow-lg"><i class="fab fa-amazon mr-2"></i> View <span id="vBtnTxt2" class="uppercase"></span></a>
+            </div>
+        </div>
+
+        <div id="listView" class="hidden">
+            <h2 id="lTitle" class="text-3xl font-black text-white mb-6"></h2>
+            <div id="lGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+    </div>
+
+    <footer class="mt-auto pt-16 pb-8 border-t border-white/5 w-full flex flex-col items-center text-center">
+        <div class="w-16 h-1 bg-gradient-to-r from-brandBlue to-neonCyan rounded-full mb-6"></div>
+        <h4 class="text-white font-bold mb-2 text-lg tracking-wider">PICKFAST</h4>
+        <p class="text-gray-500 text-sm max-w-xl mb-8">Your AI-powered shopping assistant.</p>
+        
+        <div class="flex flex-wrap justify-center gap-6 text-xs text-gray-500 font-medium mb-8">
+            <a href="#" onclick="openModal('Privacy Policy', 'Our Privacy Policy will be available here soon. All your data is secure.'); return false;" class="hover:text-neonCyan transition">Privacy Policy</a>
+            <span class="text-gray-800">|</span>
+            <a href="#" onclick="openModal('Terms of Use', 'By using our site, you agree that the analyses generated by AI are for recommendation purposes only.'); return false;" class="hover:text-neonCyan transition">Terms of Use</a>
+            <span class="text-gray-800">|</span>
+            <a href="#" onclick="openModal('Contact', 'To get in touch: info@pickfast.shop'); return false;" class="hover:text-neonCyan transition">Contact</a>
+        </div>
+
+        <p class="text-gray-600 text-[10px] max-w-3xl mb-3 px-4 leading-relaxed">Pickfast is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.com. Prices and availability are subject to change.</p>
+        <p class="text-gray-700 text-[10px]">© 2026 Pickfast.shop. All Rights Reserved.</p>
+    </footer>
+
+    <div id="legalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+        <div class="modal-content w-full max-w-lg bg-spaceBlack border border-white/10 rounded-3xl p-8 relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute top-6 right-6 text-gray-500 hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
+            <h3 id="modalTitle" class="text-2xl font-bold text-white mb-4">Title</h3>
+            <div class="h-px w-full bg-gradient-to-r from-brandBlue to-transparent mb-6"></div>
+            <p id="modalBody" class="text-gray-400 text-sm leading-relaxed mb-8">Content</p>
+            <button onclick="closeModal()" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-xl transition">Got it, Close</button>
+        </div>
+    </div>
+
+    <script>
+        const TAG = "pickfast08-20";
+        let isVS = false;
+
+        // SEO ve Open Graph Dinamik Güncelleme
+        function updateSEO(title, desc) {
+            document.title = `${title} | Pickfast`;
+            document.getElementById('ogTitle').content = `${title} | Pickfast`;
+            document.getElementById('ogDesc').content = desc;
+        }
+
+        function openModal(title, bodyText) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = bodyText;
+            document.getElementById('legalModal').classList.remove('hidden');
+        }
+        function closeModal() { document.getElementById('legalModal').classList.add('hidden'); }
+
+        function showError(msg) {
+            const t = document.getElementById('errorToast');
+            document.getElementById('errorMsg').innerText = msg;
+            t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 5000);
+        }
+
+        function resetUI() {
+            document.getElementById('resultsArea').classList.add('hidden');
+            document.getElementById('heroSection').classList.remove('hidden');
+            document.getElementById('q1').value = ""; document.getElementById('q2').value = "";
+            isVS = false;
+            document.getElementById('vsInputContainer').classList.add('hidden');
+            const btn = document.getElementById('vsBtn');
+            btn.innerHTML = `<i class="fas fa-balance-scale"></i> VS Mode`;
+            btn.classList.remove('text-blue-300');
+            window.history.pushState({}, '', '/');
+            updateSEO("Smart Shopping Assistant", "We analyze thousands of reviews in seconds so you don't have to.");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleVS() {
+            isVS = !isVS;
+            document.getElementById('vsInputContainer').classList.toggle('hidden');
+            const btn = document.getElementById('vsBtn');
+            btn.innerHTML = isVS ? `<i class="fas fa-times"></i> Cancel` : `<i class="fas fa-balance-scale"></i> VS Mode`;
+            btn.classList.toggle('text-blue-300');
+            if(!isVS) document.getElementById('q2').value = ''; 
+        }
+
+        function quickSearch(queryText) {
+            document.getElementById('q1').value = queryText;
+            if(isVS) toggleVS(); 
+            performSearch();
+        }
+
+        // Amazon.com (USA) Affiliate Yönlendirmesi
+        function lnk(k) { return `https://www.amazon.com/s?k=${encodeURIComponent(k)}&tag=${TAG}`; }
+
+        async function performSearch() {
+            const q1=document.getElementById('q1').value, q2=document.getElementById('q2').value;
+            if(!q1) { showError("Please enter a product or category."); return; }
+            if(isVS && !q2) { showError("Please enter the 2nd product for VS mode."); return; }
+
+            const slug = isVS ? `${q1}-vs-${q2}`.replace(/\s+/g, '-') : q1.replace(/\s+/g, '-');
+            window.history.pushState({}, '', `/?search=${encodeURIComponent(slug)}`);
+
+            document.getElementById('heroSection').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('resultsArea').classList.add('hidden');
+            ['singleView','vsView','listView'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+
+            try {
+                // Cloudflare Worker endpoint'in (Eğer farklıysa burayı güncelle)
+                const res = await fetch('/api/search', { 
+                    method:'POST', headers:{'Content-Type':'application/json'}, 
+                    body:JSON.stringify({ query:q1, isVS, query2:q2 }) 
+                });
+                
+                const data = await res.json();
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('resultsArea').classList.remove('hidden');
+
+                if(data.type === 'error') { showError(data.message); resetUI(); return; }
+
+                if(data.type === 'list') {
+                    document.getElementById('listView').classList.remove('hidden');
+                    document.getElementById('lTitle').innerText = data.title;
+                    updateSEO(data.title, "Check out the best AI-curated options on Pickfast.");
+                    
+                    document.getElementById('lGrid').innerHTML = data.items.map(p=>`
+                        <div class="glass-panel p-8 rounded-3xl flex flex-col h-full group">
+                            <span class="bg-blue-900/40 text-blue-300 text-xs font-bold px-3 py-1.5 rounded-lg w-max mb-4">${p.tag}</span>
+                            <h3 class="text-2xl font-bold text-white mb-3 group-hover:text-neonCyan">${p.name}</h3>
+                            <p class="text-gray-400 text-sm mb-8 flex-grow">${p.desc}</p>
+                            <a href="${lnk(p.name)}" target="_blank" class="block w-full text-center bg-white/5 hover:bg-[#FF9900] hover:text-black font-bold py-4 rounded-xl transition">View on Amazon</a>
+                        </div>`).join('');
+                } else if(data.type === 'comparison') {
+                    document.getElementById('vsView').classList.remove('hidden');
+                    document.getElementById('vN1').innerText=data.p1_name; document.getElementById('vN2').innerText=data.p2_name;
+                    document.getElementById('vSum').innerText=data.summary;
+                    updateSEO(`${data.p1_name} vs ${data.p2_name}`, data.summary);
+                    
+                    document.getElementById('vTable').innerHTML = data.table.map(r=>`
+                        <div class="vs-row">
+                            <div class="font-bold text-gray-500 text-xs uppercase tracking-wider">${r.feature}</div>
+                            <div class="text-left ${r.winner===1?'winner-text':'text-gray-300'}">${r.val1} ${r.winner===1?'<i class="fas fa-check-circle ml-1"></i>':''}</div>
+                            <div class="text-left ${r.winner===2?'winner-text':'text-gray-300'}">${r.val2} ${r.winner===2?'<i class="fas fa-check-circle ml-1"></i>':''}</div>
+                        </div>`).join('');
+                    
+                    document.getElementById('vBtnTxt1').innerText = data.p1_name;
+                    document.getElementById('vBtnTxt2').innerText = data.p2_name;
+                    document.getElementById('vBtn1').href=lnk(data.p1_name); document.getElementById('vBtn2').href=lnk(data.p2_name);
+                } else {
+                    document.getElementById('singleView').classList.remove('hidden');
+                    document.getElementById('sTitle').innerText=data.title || q1;
+                    document.getElementById('sVerdict').innerText=data.verdict;
+                    document.getElementById('sIcon').className = data.icon || "fas fa-star"; 
+                    updateSEO(data.title || q1, data.verdict.substring(0, 150) + "...");
+                    
+                    document.querySelector('#sPros .ai-list-box').innerHTML = data.pros; 
+                    document.querySelector('#sCons .ai-list-box').innerHTML = data.cons;
+                    document.getElementById('sBtn').href=lnk(data.amazon_keyword || q1);
+                }
+            } catch(e) { 
+                document.getElementById('loading').classList.add('hidden');
+                showError("Connection failed. Please try again."); resetUI(); 
+            }
+        }
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('search');
+            if (query) {
+                const cleanQuery = query.replace(/-/g, ' ');
+                if(cleanQuery.includes(' vs ')) {
+                    const parts = cleanQuery.split(' vs ');
+                    document.getElementById('q1').value = parts[0];
+                    document.getElementById('q2').value = parts[1];
+                    isVS = true; toggleVS(); toggleVS(); 
+                } else {
+                    document.getElementById('q1').value = cleanQuery;
+                }
+                performSearch();
+            }
+        };
+    </script>
+</body>
+</html>
