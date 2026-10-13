@@ -126,7 +126,12 @@ B) SINGLE PRODUCT TYPE JSON FORMAT:
 
         // 2. Fallback: Google Gemini API (Backup Model)
         if (!parsedData) {
-          const geminiApiKey = env.GEMINI_API_KEY;
+          const apiKeysPool = [
+            "AIzaSyAyEFDsKsCMix2FNPmHeFquNmDt_6_oyn8", 
+            "AIzaSyC8GW-dJOaYNftEY2w2AQcNVswc8VvFwQY", 
+            "AIzaSyC83PPMzk0qTVtlJHAesAfTxGuFNaNFMp0"
+          ];
+          const geminiApiKey = env.GEMINI_API_KEY || apiKeysPool[Math.floor(Date.now() / 1000) % apiKeysPool.length];
           if (geminiApiKey) {
             const modelName = env.GEMINI_MODEL || "gemini-2.5-flash-lite";
             const safetySettings = [
