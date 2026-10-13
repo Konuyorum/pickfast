@@ -101,6 +101,18 @@ Set `ANTHROPIC_API_KEY` in the Cloudflare Dashboard under:
 
 ---
 
+## 🏢 Company & Leadership
+
+- **Company:** PickFast Technologies
+- **Founder & CEO:** Ediz Akal
+- **Headquarters:** Istanbul, Turkey
+- **Official Website:** [https://pickfast.shop](https://pickfast.shop)
+- **Corporate Email:** founder@pickfast.shop
+- **Support & Inquiries:** info@pickfast.shop
+
+---
+
 ## 📄 License
 
 This project is open-source under the [MIT License](LICENSE).
+
